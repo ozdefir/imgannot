@@ -81,7 +81,7 @@
 </div>
 
     <div id="controls">
-      <input type="range" min="0" max="100" name="blurer" onchange="background.style.filter = 'blur(' + this.value/5 + 'px)'" id="blurer">
+      <input type="range" min="0" max="100" name="blurer" oninput="background.style.filter = 'blur(' + this.value/5 + 'px)'" id="blurer">
       <label for="volume"></label>
       <input type="color"  name="painter" oninput="changeCSSStyle('.fg-base', 'background-color', this.value)" id="painter">
       <label for="volume"></label>
