@@ -145,7 +145,7 @@ function generateForeground(x1, y1, w, h, url, update=false){
 }
 
 
-    images.addEventListener("click", function(event){
+images.addEventListener("mousedown", function(event){
         
         if(points.length % 2 === 0){
             x1  = event.offsetX + event.target.offsetLeft;
@@ -155,6 +155,27 @@ function generateForeground(x1, y1, w, h, url, update=false){
             generateForeground(x1, y1, 1, 1, url)
         }
         else {
+            x2  = event.offsetX + event.target.offsetLeft;
+            y2  = event.offsetY + event.target.offsetTop;
+            [x1, y1] = points[0]
+            points.push([x2, y2]);
+            console.log("before", x1,y1, x2, y2)
+            if(x1 > x2 ) [x1, x2 ]= [x2, x1];
+            if(y1 > y2 ) [y1, y2] = [y2, y1];
+            console.log("after", x1,y1, x2, y2)
+            w = x2  - x1;
+            h = y2  - y1;
+            newFg.className = "fg";
+            generateForeground(x1, y1, w, h, url, true)
+
+        }
+
+    })
+    images.addEventListener("mouseup", function(event){
+        
+        if(points.length % 2 === 0){
+        }
+        else if (newFg.className === "fg fg-inprogress") {
             x2  = event.offsetX + event.target.offsetLeft;
             y2  = event.offsetY + event.target.offsetTop;
             [x1, y1] = points[0]
