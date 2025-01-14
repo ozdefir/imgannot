@@ -65,14 +65,20 @@
         height: 100%;
     }
     .fg-inprogress .fg-cover{
-        border:1px solid blue;
+        border:1px solid blue ;
+        border-radius: 5px;
         box-sizing: border-box;
     }
 
 </style>
 </head>
 <body>
-<input type="file" name="" id="fileInput">
+<div id="inputContainer" style="width:300px;margin:auto">
+  <textarea placeholder="">
+
+  </textarea>
+  <input type="file" name="" id="fileInput">
+</div>
 <div id="imageContainer" style:"display:none" draggable="false">
     <div id="images">
     
@@ -85,6 +91,9 @@
       <label for="volume"></label>
       <input type="color"  name="painter" oninput="changeCSSStyle('.fg-base', 'background-color', this.value)" id="painter">
       <label for="volume"></label>
+      <button onclick="controls.style.display='none'">Hide</button>
+      <button onclick="var lastFg = document.querySelector('.fg:last-child'); lastFg.parentElement.removeChild(lastFg)">Delete Last</button>
+
     </div>
     
 </div>
@@ -94,7 +103,7 @@
     rect = document.querySelector("#myClip > rect");
     fileInput.addEventListener("change", handleFiles, false);
     function handleFiles() {
-        fileInput.style.display = "none";
+        inputContainer.style.display = "none";
         files = this.files;
         if (FileReader && files && files.length) {
         fr = new FileReader();
@@ -112,6 +121,34 @@
     }
     }
 
+document.onpaste = function(event){
+  var items = (event.clipboardData || event.originalEvent.clipboardData).items;
+  console.log(JSON.stringify(items)); // will give you the mime types
+  for (index in items) {
+    var item = items[index];
+    if (item.kind === 'file') {
+      var imageBlob = item.getAsFile();
+      url = URL.createObjectURL(imageBlob)
+      background.src = url;
+      inputContainer.style.display = "none";
+      imageContainer.style.display = "block";
+      /* var reader = new FileReader();
+      reader.onload = function(event){
+        console.log(event.target.result)}; // data url!
+      reader.readAsDataURL(blob); */
+    }
+  }
+}
+
+document.ondblclick = function(e){
+  console.log(e.target.className);
+  if(e.target.className == "fg-cover"){
+    controls.style.display = "block";
+  }
+  else{
+    controls.style.display = "none";
+  }
+}
 
 function generateForeground(x1, y1, w, h, url, update=false){
     if(!update){
@@ -132,27 +169,22 @@ function generateForeground(x1, y1, w, h, url, update=false){
     else{
         
     }
-    newFg.style = `clip-path:xywh(${x1}px ${y1}px ${w}px ${h}px)`;
+    newFg.style = `clip-path:xywh(${x1}px ${y1}px ${w}px ${h}px round 5px)`;
     fgBase.style = `top:${y1}px; left:${x1}px; width:${w}px; height:${h}px`;
     fgCover.style = `top:${y1}px; left:${x1}px; width:${w}px; height:${h}px`;
     console.log(newFg.parentElement);
-
-
-
-    
-
-    newFg.style = `clip-path:xywh(${x1}px ${y1}px ${w}px ${h}px)`;
 }
 
-
-images.addEventListener("mousedown", function(event){
+function startAnnotation(event){
         
         if(points.length % 2 === 0){
             x1  = event.offsetX + event.target.offsetLeft;
             y1  = event.offsetY + event.target.offsetTop;
             points = [[x1, y1]];
             console.log(points);
-            generateForeground(x1, y1, 1, 1, url)
+            generateForeground(x1, y1, 3, 3, url)
+            console.log("s1")
+
         }
         else {
             x2  = event.offsetX + event.target.offsetLeft;
@@ -167,56 +199,103 @@ images.addEventListener("mousedown", function(event){
             h = y2  - y1;
             newFg.className = "fg";
             generateForeground(x1, y1, w, h, url, true)
+            console.log("s2")
+
 
         }
 
-    })
-    images.addEventListener("mouseup", function(event){
+    }
+
+function endAnnotation(event){
+    
+    if(points.length % 2 === 0){
+        console.log("e1")
+    }
+    else if (newFg.className !== "fg fg-inprogress") {
+        newFg.className = "fg fg-inprogress";
+        console.log("e2")
+
+    }
+    else {
+        console.log("e3")
+
+        x2  = event.offsetX + event.target.offsetLeft;
+        y2  = event.offsetY + event.target.offsetTop;
+        [x1, y1] = points[0]
+        points.push([x2, y2]);
+        console.log("before", x1,y1, x2, y2)
+        if(x1 > x2 ) [x1, x2 ]= [x2, x1];
+        if(y1 > y2 ) [y1, y2] = [y2, y1];
+        console.log("after", x1,y1, x2, y2)
+        w = x2  - x1;
+        h = y2  - y1;
+        newFg.className = "fg";
+        generateForeground(x1, y1, w, h, url, true)
+
+    }
+
+}
+
+
+function resumeAnnotation(event){
+    if(points.length % 2 === 1){
         
-        if(points.length % 2 === 0){
-        }
-        else if (newFg.className === "fg fg-inprogress") {
-            x2  = event.offsetX + event.target.offsetLeft;
-            y2  = event.offsetY + event.target.offsetTop;
-            [x1, y1] = points[0]
-            points.push([x2, y2]);
-            console.log("before", x1,y1, x2, y2)
-            if(x1 > x2 ) [x1, x2 ]= [x2, x1];
-            if(y1 > y2 ) [y1, y2] = [y2, y1];
-            console.log("after", x1,y1, x2, y2)
-            w = x2  - x1;
-            h = y2  - y1;
-            newFg.className = "fg";
-            generateForeground(x1, y1, w, h, url, true)
+        console.log("r1")
+        console.log(points)
+        x1 = points[0][0]
+        y1 = points[0][1]
+        x2  = event.offsetX + event.target.offsetLeft;
+        y2  = event.offsetY + event.target.offsetTop;
 
-        }
+        // dot2.style.display = "block";
 
-    })
+        // console.log("before", x1,y1, x2, y2)
+        if(x1 > x2 ) [x1, x2 ]= [x2, x1];
+        if(y1 > y2 ) [y1, y2] = [y2, y1];
+        // console.log("after", x1,y1, x2, y2)
+        w = x2  - x1;
+        h = y2  - y1;
+        newFg.className = "fg fg-inprogress";
+        generateForeground(x1, y1, w, h, url, true);
+        // foreground.style.clipPath= `xywh(${x1}px ${y1}px ${w}px ${h}px)`;
+        // console.log(x1,y1,w,h, x2, y2)
+    }
+
+}
 
 
-    images.addEventListener("mousemove", function(event){
-        if(points.length % 2 === 1){
-            
 
-            [x1, y1] = points[0]
-            x2  = event.offsetX + event.target.offsetLeft;
-            y2  = event.offsetY + event.target.offsetTop;
+function resumeAnnotationTouch(event){
+    console.log("touchMoved");
+    if(points.length % 2 === 1){
+        
 
-            // dot2.style.display = "block";
+        [x1, y1] = points[0]
+        x2  = event.offsetX + event.targetTouches[0].offsetLeft;
+        y2  = event.offsetY + event.targetTouches[0].offsetTop;
 
-            // console.log("before", x1,y1, x2, y2)
-            if(x1 > x2 ) [x1, x2 ]= [x2, x1];
-            if(y1 > y2 ) [y1, y2] = [y2, y1];
-            // console.log("after", x1,y1, x2, y2)
-            w = x2  - x1;
-            h = y2  - y1;
-            newFg.className = "fg fg-inprogress";
-            generateForeground(x1, y1, w, h, url, true);
-            // foreground.style.clipPath= `xywh(${x1}px ${y1}px ${w}px ${h}px)`;
-            // console.log(x1,y1,w,h, x2, y2)
-        }
+        // dot2.style.display = "block";
 
-    })
+        // console.log("before", x1,y1, x2, y2)
+        if(x1 > x2 ) [x1, x2 ]= [x2, x1];
+        if(y1 > y2 ) [y1, y2] = [y2, y1];
+        // console.log("after", x1,y1, x2, y2)
+        w = x2  - x1;
+        h = y2  - y1;
+        newFg.className = "fg fg-inprogress";
+        generateForeground(x1, y1, w, h, url, true);
+        // foreground.style.clipPath= `xywh(${x1}px ${y1}px ${w}px ${h}px)`;
+        // console.log(x1,y1,w,h, x2, y2)
+    }
+
+}
+
+images.addEventListener("mousedown", startAnnotation)
+images.addEventListener("mouseup", endAnnotation)
+images.addEventListener("mousemove", resumeAnnotation)
+
+// images.addEventListener("touchmove", resumeAnnotationTouch)
+
 
 // ssMain is the stylesheet's index based on load order. See document.styleSheets. E.g. 0=reset.css, 1=main.css.
 var ssMain = 0;
